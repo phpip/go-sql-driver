@@ -2,10 +2,12 @@ package driver
 
 import (
 	"database/sql"
-	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 )
-var Db *sql.DB
+
+
+
 
 type SetField struct {
 	FieldName string
@@ -13,7 +15,31 @@ type SetField struct {
 }
 type SqlValues []SetField
 
-func Insert(table string, datas SqlValues) {
+
+type DbConfig struct {
+	db *sql.DB
+	DriverName string
+	Address string
+	User string
+	Password string
+	Port string
+	DbName string
+}
+
+
+func (config *DbConfig) Connect() {
+	var err error
+	config.db, err = sql.Open("mysql", config.User+":"+config.Password+"@tcp("+config.Address+":"+config.Port+")/"+config.DbName)
+	if err != nil {
+		log.Panicln("err:", err.Error())
+	}
+
+	config.db.SetMaxOpenConns(0)
+	config.db.SetMaxIdleConns(0)
+}
+
+//插入数据
+func (config *DbConfig) Insert(table string, datas SqlValues) (id int64, err error) {
 	fieldString := ""
 	placeString := ""
 	var fieldValues []interface{}
@@ -31,14 +57,18 @@ func Insert(table string, datas SqlValues) {
 	}
 	sql := "INSERT INTO `" + table + "` (" + fieldString + ") VALUES (" + placeString + ")"
 
-	result, e := Db.Exec(sql, fieldValues...)
-	if e != nil {
-		log.Panicln("user insert error", e.Error())
-	}
-	id, err := result.LastInsertId()
+	result, err := config.db.Exec(sql, fieldValues...)
 	if err != nil {
-		log.Panicln("user insert id error", err.Error(), id)
+		return 0, err
 	}
-	fmt.Printf("id=%d", id)
+	id, err = result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
+//更新
+func Update(table string, datas SqlValues, where string) {
+
+}
