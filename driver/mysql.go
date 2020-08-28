@@ -47,7 +47,7 @@ func (S *SqlValues) parseData() (string, []interface{}, error) {
 
 //插入数据
 func (config *DbConfig) Insert(table string, datas SqlValues) (id int64, err error) {
-	s, v, nil := datas.parseData()
+	s, v, _ := datas.parseData()
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
 	sql := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
