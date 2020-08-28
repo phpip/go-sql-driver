@@ -45,10 +45,10 @@ func main() {
 	datas2 := make(DB.SqlValues,0,10)
 	title = DB.SetField{"title", "这里是连接池2"}
 	uid = DB.SetField{"uid", 555}
-	datas = append(datas2, title)
-	datas = append(datas2, uid)
+	datas2 = append(datas2, title)
+	datas2 = append(datas2, uid)
 
-	id2,err:=db2.Insert("test", datas)
+	id2,err:=db2.Insert("test", datas2)
 	if err!=nil {
 		fmt.Println("insert err:",err.Error())
 	}
