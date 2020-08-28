@@ -18,11 +18,9 @@ func main() {
 	}
 	db1.Connect()
 
-	datas := make(DB.SqlValues,0,10)
-	title := DB.SetField{"title", "今天天气不错"}
-	uid := DB.SetField{"uid", 123}
-	datas = append(datas, title)
-	datas = append(datas, uid)
+	datas := make(DB.DataStruct)
+	datas["title"] = "今天天气不错"
+	datas["uid"] = 666
 
 	id,err:=db1.Insert("test", datas)
 	if err!=nil {
@@ -30,8 +28,8 @@ func main() {
 	}
 	fmt.Println("连接池1: id = ", id)
 
-	//连接池2
 
+	//连接池2
 	db2 := DB.DbConfig{
 		DriverName: "mysql",
 		Address:    "127.0.0.1",
@@ -42,13 +40,11 @@ func main() {
 	}
 	db2.Connect()
 
-	datas2 := make(DB.SqlValues,0,10)
-	title = DB.SetField{"title", "这里是连接池2"}
-	uid = DB.SetField{"uid", 555}
-	datas2 = append(datas2, title)
-	datas2 = append(datas2, uid)
+	datas2 := make(DB.DataStruct)
+	datas2["title"] = "还是不错的"
+	datas2["uid"] = 999
 
-	id2,err:=db2.Insert("test", datas2)
+	id2,err:=db2.Insert("test", datas)
 	if err!=nil {
 		fmt.Println("insert err:",err.Error())
 	}
