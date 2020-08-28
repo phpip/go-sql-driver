@@ -2,12 +2,11 @@ package driver
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"strings"
 )
-
-
-
 
 type SetField struct {
 	FieldName string
@@ -15,17 +14,15 @@ type SetField struct {
 }
 type SqlValues []SetField
 
-
 type DbConfig struct {
-	db *sql.DB
+	db         *sql.DB
 	DriverName string
-	Address string
-	User string
-	Password string
-	Port string
-	DbName string
+	Address    string
+	User       string
+	Password   string
+	Port       string
+	DbName     string
 }
-
 
 func (config *DbConfig) Connect() {
 	var err error
@@ -38,26 +35,24 @@ func (config *DbConfig) Connect() {
 	config.db.SetMaxIdleConns(0)
 }
 
+func (S *SqlValues) parseData() (string, []interface{}, error) {
+	keys := []string{}
+	values := []interface{}{}
+	for _, key := range *S {
+		keys = append(keys, key.FieldName)
+		values = append(values, key.FieldData)
+	}
+	return strings.Join(keys, ","), values, nil
+}
+
 //插入数据
 func (config *DbConfig) Insert(table string, datas SqlValues) (id int64, err error) {
-	fieldString := ""
-	placeString := ""
-	var fieldValues []interface{}
-	for _, data := range datas {
-		if data.FieldName == "" {
-			continue
-		}
-		if fieldString != "" {
-			fieldString += ","
-			placeString += ","
-		}
-		fieldString += "`" + data.FieldName + "`"
-		placeString += "?"
-		fieldValues = append(fieldValues, data.FieldData)
-	}
-	sql := "INSERT INTO `" + table + "` (" + fieldString + ") VALUES (" + placeString + ")"
+	s, v, nil := datas.parseData()
+	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
+	placeString = placeString[:len(placeString)-1]
+	sql := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
 
-	result, err := config.db.Exec(sql, fieldValues...)
+	result, err := config.db.Exec(sql, v...)
 	if err != nil {
 		return 0, err
 	}
