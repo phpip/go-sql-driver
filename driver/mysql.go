@@ -8,12 +8,13 @@ import (
 	"strings"
 )
 
-type SetField struct {
+/*type SetField struct {
 	FieldName string
 	FieldData interface{}
 }
 type SqlValues []SetField
-
+*/
+type DataStruct map[string]interface{}
 type DbConfig struct {
 	db         *sql.DB
 	DriverName string
@@ -35,18 +36,18 @@ func (config *DbConfig) Connect() {
 	config.db.SetMaxIdleConns(0)
 }
 
-func (S *SqlValues) parseData() (string, []interface{}, error) {
+func (S *DataStruct) parseData() (string, []interface{}, error) {
 	keys := []string{}
 	values := []interface{}{}
-	for _, key := range *S {
-		keys = append(keys, key.FieldName)
-		values = append(values, key.FieldData)
+	for key, value := range *S {
+		keys = append(keys, key)
+		values = append(values, value)
 	}
 	return strings.Join(keys, ","), values, nil
 }
 
 //插入数据
-func (config *DbConfig) Insert(table string, datas SqlValues) (id int64, err error) {
+func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err error) {
 	s, v, _ := datas.parseData()
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
@@ -64,6 +65,6 @@ func (config *DbConfig) Insert(table string, datas SqlValues) (id int64, err err
 }
 
 //更新
-func Update(table string, datas SqlValues, where string) {
+func Update(table string, datas DataStruct, where string) {
 
 }
