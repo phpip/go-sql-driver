@@ -3,21 +3,26 @@ package main
 import (
 	DB "db-driver/driver"
 	"fmt"
+	"os"
 )
 
 
 func main() {
+
 	//连接池1
 	db1 := DB.DbConfig{
 		DriverName: "mysql",
-		Address:    "127.0.0.1",
+		Addr:    "127.0.0.1",
 		User:       "root",
-		Password:   "root",
+		Passwd:   "root",
 		Port:       "3306",
-		DbName:     "test1",
+		DBName:     "test1",
 	}
-	db1.Connect()
-
+	err := db1.Connect()
+	if err!=nil {
+		fmt.Println("connect err:",err.Error())
+		os.Exit(1)
+	}
 	datas := make(DB.DataStruct)
 	datas["title"] = "今天天气不错"
 	datas["uid"] = 666
@@ -32,13 +37,17 @@ func main() {
 	//连接池2
 	db2 := DB.DbConfig{
 		DriverName: "mysql",
-		Address:    "127.0.0.1",
+		Addr:    "127.0.0.1",
 		User:       "root",
-		Password:   "root",
+		Passwd:   "root",
 		Port:       "3306",
-		DbName:     "test2",
+		DBName:     "test2",
 	}
-	db2.Connect()
+	err = db2.Connect()
+	if err!=nil {
+		fmt.Println("connect err:",err.Error())
+		os.Exit(1)
+	}
 
 	datas2 := make(DB.DataStruct)
 	datas2["title"] = "还是不错的"
@@ -49,4 +58,19 @@ func main() {
 		fmt.Println("insert err:",err.Error())
 	}
 	fmt.Println("连接池2: id2 = ", id2)
+
+	//get one 获取一条
+	data,err:=db2.GetOne("test","*","id=33")
+	fmt.Println(data)
+	fmt.Println(data["title"])
+	fmt.Println(data["uid"])
+	fmt.Println(data["adddate"])
+	t1:=db2.Format2String(data["title"].([]uint8))
+	fmt.Printf(t1)
+	t2:=db2.Format2String(data["uid"].([]uint8))
+	fmt.Printf(t2)
+	//fmt.Println(reflect.TypeOf(data["uid"]))
+	//fmt.Println(B2S(data["uid"].([]uint8)))
+
 }
+
