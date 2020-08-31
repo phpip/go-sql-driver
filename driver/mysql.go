@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"strconv"
 	"strings"
 )
 
@@ -103,49 +102,29 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 }
 
 //更新
-func (config *DbConfig) Update(table string, datas DataStruct, args ...interface{}) (num int64, err error) {
+func (config *DbConfig) Update(table string, datas DataStruct, where string,args ...interface{}) (num int64, err error) {
 	s, v, _ := datas.setData()
-	sql := "UPDATE `" + table + "` SET " + s
-	for _, arg := range args {
-		switch arg.(type) {
-		case int:
-			sql += strconv.Itoa(arg.(int))
-		case int64:
-			sql += strconv.FormatInt(arg.(int64), 10)
-		case string:
-			sql += " " + arg.(string)
-		case float32:
-			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
-		case float64:
-			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
-		}
+	sqlString := "UPDATE `" + table + "` SET " + s
+	if where!="" {
+		sqlString+=" WHERE "+where
 	}
-	fmt.Println(sql)
-	result, err := config.db.Exec(sql, v...)
+	fmt.Println(sqlString)
+	for _, value := range args {
+		v = append(v, value)
+	}
+	result, err := config.db.Exec(sqlString, v...)
 	num, err = result.RowsAffected()
 	return
 }
 
 //获取一条
-func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[string]interface{}, error) {
-	sql := "SELECT " + fields + " FROM `" + table + "`"
-	for _, arg := range args {
-		switch arg.(type) {
-		case int:
-			sql += strconv.Itoa(arg.(int))
-		case int64:
-			sql += strconv.FormatInt(arg.(int64), 10)
-		case string:
-			sql += " " + arg.(string)
-		case float32:
-			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
-		case float64:
-			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
-		}
+func (config *DbConfig) GetOne(table, fields, where string,args ...interface{}) (map[string]interface{}, error) {
+	sqlString := "SELECT " + fields + " FROM `" + table + "`"
+	if where!="" {
+		sqlString+=" WHERE "+where+" LIMIT 0,1"
 	}
-	sql += " LIMIT 0,1"
-	fmt.Println(sql)
-	rows, err := config.db.Query(sql)
+	fmt.Println(sqlString)
+	rows, err := config.db.Query(sqlString,args...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,24 +149,13 @@ func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[s
 
 
 //批量查询，不带分页计算
-func (config *DbConfig) Select(table string, fields string, args ...interface{}) ([]map[string]interface{}, error) {
-	sql := "SELECT " + fields + " FROM `" + table + "`"
-	for _, arg := range args {
-		switch arg.(type) {
-		case int:
-			sql += strconv.Itoa(arg.(int))
-		case int64:
-			sql += strconv.FormatInt(arg.(int64), 10)
-		case string:
-			sql += " " + arg.(string)
-		case float32:
-			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
-		case float64:
-			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
-		}
+func (config *DbConfig) Select(table string, fields string, where string,args ...interface{}) ([]map[string]interface{}, error) {
+	sqlString := "SELECT " + fields + " FROM `" + table + "`"
+	if where!="" {
+		sqlString+=" WHERE "+where
 	}
-	fmt.Println(sql)
-	rows, err := config.db.Query(sql)
+	fmt.Println(sqlString)
+	rows, err := config.db.Query(sqlString,args...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +179,18 @@ func (config *DbConfig) Select(table string, fields string, args ...interface{})
 	}
 	return results, nil
 }
+func (config *DbConfig) Delete(table string, where string, args ...interface{}) (num int64, err error) {
+	sqlString := "DELETE FROM `" + table + "`"
+	if where!="" {
+		sqlString+=" WHERE "+where
+	}
+	fmt.Println(sqlString)
+	stmt, err := config.db.Prepare(sqlString)
 
+	result, err := stmt.Exec(args...)
+	num, err = result.RowsAffected()
+	return
+}
 func Format2String(datas map[string]interface{}, key string) string {
 	if datas[key] == nil {
 		return ""
