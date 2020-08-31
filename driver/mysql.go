@@ -73,6 +73,7 @@ func (d *DataStruct) Set(key string, value interface{}) {
 func (d DataStruct) Get(key string) interface{} {
 	return d[key]
 }
+
 //配合update使用，生成 field=?
 func (S *DataStruct) setData() (string, []interface{}, error) {
 	keys := []string{}
@@ -102,11 +103,11 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 }
 
 //更新
-func (config *DbConfig) Update(table string, datas DataStruct, where string,args ...interface{}) (num int64, err error) {
+func (config *DbConfig) Update(table string, datas DataStruct, where string, args ...interface{}) (num int64, err error) {
 	s, v, _ := datas.setData()
 	sqlString := "UPDATE `" + table + "` SET " + s
-	if where!="" {
-		sqlString+=" WHERE "+where
+	if where != "" {
+		sqlString += " WHERE " + where
 	}
 	fmt.Println(sqlString)
 	for _, value := range args {
@@ -118,13 +119,13 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string,args
 }
 
 //获取一条
-func (config *DbConfig) GetOne(table, fields, where string,args ...interface{}) (map[string]interface{}, error) {
+func (config *DbConfig) GetOne(table, fields, where string, args ...interface{}) (map[string]interface{}, error) {
 	sqlString := "SELECT " + fields + " FROM `" + table + "`"
-	if where!="" {
-		sqlString+=" WHERE "+where+" LIMIT 0,1"
+	if where != "" {
+		sqlString += " WHERE " + where + " LIMIT 0,1"
 	}
 	fmt.Println(sqlString)
-	rows, err := config.db.Query(sqlString,args...)
+	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -147,15 +148,14 @@ func (config *DbConfig) GetOne(table, fields, where string,args ...interface{}) 
 	return item, nil
 }
 
-
 //批量查询，不带分页计算
-func (config *DbConfig) Select(table string, fields string, where string,args ...interface{}) ([]map[string]interface{}, error) {
+func (config *DbConfig) Select(table string, fields string, where string, args ...interface{}) ([]map[string]interface{}, error) {
 	sqlString := "SELECT " + fields + " FROM `" + table + "`"
-	if where!="" {
-		sqlString+=" WHERE "+where
+	if where != "" {
+		sqlString += " WHERE " + where
 	}
 	fmt.Println(sqlString)
-	rows, err := config.db.Query(sqlString,args...)
+	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -181,8 +181,8 @@ func (config *DbConfig) Select(table string, fields string, where string,args ..
 }
 func (config *DbConfig) Delete(table string, where string, args ...interface{}) (num int64, err error) {
 	sqlString := "DELETE FROM `" + table + "`"
-	if where!="" {
-		sqlString+=" WHERE "+where
+	if where != "" {
+		sqlString += " WHERE " + where
 	}
 	fmt.Println(sqlString)
 	stmt, err := config.db.Prepare(sqlString)

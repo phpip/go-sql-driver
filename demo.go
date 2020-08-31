@@ -61,7 +61,7 @@ func main() {
 
 	//get one 获取一条
 
-	data, err := db2.GetOne("test", "*", "id > ? ORDER BY id DESC",159)
+	data, err := db2.GetOne("test", "*", "id > ? ORDER BY id DESC", 159)
 	fmt.Println(data)
 	fmt.Println(data["title"])
 	fmt.Println(data["uid"])
@@ -74,7 +74,7 @@ func main() {
 	fmt.Println(DB.Format2String(data, "adddate"))
 
 	//select
-	data2, err := db2.Select("test", "*", "id > ? ORDER BY id DESC Limit 0,10",10)
+	data2, err := db2.Select("test", "*", "id > ? ORDER BY id DESC Limit 0,10", 10)
 	for i, i2 := range data2 {
 		fmt.Println(i, i2)
 		fmt.Println(DB.Format2String(i2, "title"))
@@ -84,15 +84,15 @@ func main() {
 	datas3["title"] = "修改后的结果2"
 	datas3["uid"] = 8
 
-	rows, err := db2.Update("test", datas3, "id>?",86)
+	rows, err := db2.Update("test", datas3, "id>?", 86)
 	fmt.Println("影响行数:", rows)
 
 	//delete
-	deleteid:=86
-	rows2, err := db2.Delete("test", "id<?",deleteid)
+	deleteid := 86
+	rows2, err := db2.Delete("test", "id<?", deleteid)
 	fmt.Println("影响行数:", rows2)
 
-	title:="----test---"
-	rows3, err := db2.Delete("test", "title=?",title)
+	title := "----test---"
+	rows3, err := db2.Delete("test", "title=?", title)
 	fmt.Println("影响行数:", rows3)
 }
