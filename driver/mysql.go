@@ -24,6 +24,7 @@ type DbConfig struct {
 	DBName       string
 	MaxOpenConns int
 	MaxIdleConns int
+	Debug bool
 }
 
 func (config *DbConfig) Connect() (err error) {
@@ -90,8 +91,11 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 	s, v, _ := datas.parseData()
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
-	sql := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
-	result, err := config.db.Exec(sql, v...)
+	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
+	if config.Debug {
+		fmt.Println("SQL Debug:",sqlString)
+	}
+	result, err := config.db.Exec(sqlString, v...)
 	if err != nil {
 		return 0, err
 	}
@@ -109,7 +113,9 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	fmt.Println(sqlString)
+	if config.Debug {
+		fmt.Println("SQL Debug:",sqlString)
+	}
 	for _, value := range args {
 		v = append(v, value)
 	}
@@ -124,7 +130,9 @@ func (config *DbConfig) GetOne(table, fields, where string, args ...interface{})
 	if where != "" {
 		sqlString += " WHERE " + where + " LIMIT 0,1"
 	}
-	fmt.Println(sqlString)
+	if config.Debug {
+		fmt.Println("SQL Debug:",sqlString)
+	}
 	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
@@ -154,7 +162,9 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	fmt.Println(sqlString)
+	if config.Debug {
+		fmt.Println("SQL Debug:",sqlString)
+	}
 	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
@@ -184,7 +194,9 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	fmt.Println(sqlString)
+	if config.Debug {
+		fmt.Println("SQL Debug:",sqlString)
+	}
 	stmt, err := config.db.Prepare(sqlString)
 
 	result, err := stmt.Exec(args...)
@@ -195,6 +207,7 @@ func (config *DbConfig) Close() (error){
 	err := config.db.Close()
 	return err
 }
+
 
 func Format2String(datas map[string]interface{}, key string) string {
 	if datas[key] == nil {

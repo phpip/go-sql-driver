@@ -16,6 +16,7 @@ func main() {
 		Passwd:     "root",
 		Port:       "3306",
 		DBName:     "test1",
+		Debug:     true,
 	}
 	err := db1.Connect()
 	if err != nil {
@@ -42,6 +43,7 @@ func main() {
 		Passwd:     "root",
 		Port:       "3306",
 		DBName:     "test2",
+		Debug:     true,
 	}
 	err = db2.Connect()
 	if err != nil {
