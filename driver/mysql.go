@@ -99,8 +99,7 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string) {
 
 //获取一条
 func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[string]interface{}, error) {
-	sql := ""
-	sql = "SELECT " + fields + " FROM `" + table + "`"
+	sql := "SELECT " + fields + " FROM `" + table + "`"
 	for _, arg := range args {
 		switch arg.(type) {
 		case int:
@@ -141,8 +140,24 @@ func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[s
 }
 
 //批量查询，不带分页计算
-func (config *DbConfig) Select(table string, fields string, where string) (map[string]interface{}, error) {
-	rows, err := config.db.Query("SELECT " + fields + " FROM `" + table + "` WHERE " + where + " LIMIT 0,1")
+func (config *DbConfig) Select(table string, fields string, args ...interface{}) ([]map[string]interface{}, error) {
+	sql := "SELECT " + fields + " FROM `" + table + "`"
+	for _, arg := range args {
+		switch arg.(type) {
+		case int:
+			sql += strconv.Itoa(arg.(int))
+		case int64:
+			sql += strconv.FormatInt(arg.(int64), 10)
+		case string:
+			sql += " " + arg.(string)
+		case float32:
+			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
+		case float64:
+			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
+		}
+	}
+	fmt.Println(sql)
+	rows, err := config.db.Query(sql)
 	if err != nil {
 		return nil, err
 	}
@@ -155,14 +170,16 @@ func (config *DbConfig) Select(table string, fields string, where string) (map[s
 		var a interface{}
 		cache[index] = &a
 	}
+	var results []map[string]interface{}
 	item := make(map[string]interface{})
 	for rows.Next() {
 		_ = rows.Scan(cache...)
 		for i, data := range cache {
 			item[columns[i]] = *data.(*interface{}) //取实际类型
 		}
+		results = append(results, item)
 	}
-	return item, nil
+	return results, nil
 }
 
 func Format2String(datas map[string]interface{}, key string) string {

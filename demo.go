@@ -73,4 +73,9 @@ func main() {
 	//fmt.Println(reflect.TypeOf(data["uid"]))
 	fmt.Println(DB.Format2String(data, "adddate"))
 
+	data2, err := db2.Select("test", "*", "WHERE id > ", 1, "ORDER BY id DESC","Limit 0,10")
+	for i, i2 := range data2 {
+		fmt.Println(i,i2)
+		fmt.Println(DB.Format2String(i2, "title"))
+	}
 }
