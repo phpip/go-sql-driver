@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"strconv"
 	"strings"
 )
 
@@ -80,7 +81,6 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
 	sql := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
-
 	result, err := config.db.Exec(sql, v...)
 	if err != nil {
 		return 0, err
@@ -93,11 +93,55 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 }
 
 //更新
-func Update(table string, datas DataStruct, where string) {
+func (config *DbConfig) Update(table string, datas DataStruct, where string) {
 
 }
+
 //获取一条
-func (config *DbConfig) GetOne(table string, fields string, where string) (map[string]interface{}, error) {
+func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[string]interface{}, error) {
+	sql := ""
+	sql = "SELECT " + fields + " FROM `" + table + "`"
+	for _, arg := range args {
+		switch arg.(type) {
+		case int:
+			sql += strconv.Itoa(arg.(int))
+		case int64:
+			sql += strconv.FormatInt(arg.(int64), 10)
+		case string:
+			sql += " " + arg.(string)
+		case float32:
+			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
+		case float64:
+			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
+		}
+	}
+	sql += " LIMIT 0,1"
+	fmt.Println(sql)
+	rows, err := config.db.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, _ := rows.Columns()
+	columnLength := len(columns)
+	cache := make([]interface{}, columnLength)
+	for index, _ := range cache {
+		var a interface{}
+		cache[index] = &a
+	}
+	item := make(map[string]interface{})
+	for rows.Next() {
+		_ = rows.Scan(cache...)
+		for i, data := range cache {
+			item[columns[i]] = *data.(*interface{}) //取实际类型
+		}
+	}
+	return item, nil
+}
+
+//批量查询，不带分页计算
+func (config *DbConfig) Select(table string, fields string, where string) (map[string]interface{}, error) {
 	rows, err := config.db.Query("SELECT " + fields + " FROM `" + table + "` WHERE " + where + " LIMIT 0,1")
 	if err != nil {
 		return nil, err
@@ -118,18 +162,16 @@ func (config *DbConfig) GetOne(table string, fields string, where string) (map[s
 			item[columns[i]] = *data.(*interface{}) //取实际类型
 		}
 	}
-
 	return item, nil
 }
 
-//批量查询，不带分页计算
-func (config DbConfig) Select(table string, fields string, where string) {
-
-}
-
-func (config DbConfig) Format2String(bs []uint8) string {
+func Format2String(datas map[string]interface{}, key string) string {
+	if datas[key] == nil {
+		return ""
+	}
 	ba := []byte{}
-	for _, b := range bs {
+	data := datas[key].([]uint8)
+	for _, b := range data {
 		ba = append(ba, byte(b))
 	}
 	return string(ba)
