@@ -22,6 +22,8 @@ func main() {
 		fmt.Println("connect err:", err.Error())
 		os.Exit(1)
 	}
+	defer db1.Close()
+
 	datas := make(DB.DataStruct)
 	datas["title"] = "今天天气不错"
 	datas["uid"] = 666
@@ -46,6 +48,7 @@ func main() {
 		fmt.Println("connect err:", err.Error())
 		os.Exit(1)
 	}
+	defer db2.Close()
 
 	datas2 := make(DB.DataStruct)
 	datas2["title"] = "还是不错的"
@@ -95,4 +98,5 @@ func main() {
 	title := "----test---"
 	rows3, err := db2.Delete("test", "title=?", title)
 	fmt.Println("影响行数:", rows3)
+
 }

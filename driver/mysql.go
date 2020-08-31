@@ -191,6 +191,11 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 	num, err = result.RowsAffected()
 	return
 }
+func (config *DbConfig) Close() (error){
+	err := config.db.Close()
+	return err
+}
+
 func Format2String(datas map[string]interface{}, key string) string {
 	if datas[key] == nil {
 		return ""
