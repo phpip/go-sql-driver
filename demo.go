@@ -61,7 +61,7 @@ func main() {
 
 	//get one 获取一条
 
-	data, err := db2.GetOne("test", "*", "id = ?",159)
+	data, err := db2.GetOne("test", "*", "id > ? ORDER BY id DESC",159)
 	fmt.Println(data)
 	fmt.Println(data["title"])
 	fmt.Println(data["uid"])
