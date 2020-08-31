@@ -74,6 +74,16 @@ func (d *DataStruct) Set(key string, value interface{}) {
 func (d DataStruct) Get(key string) interface{} {
 	return d[key]
 }
+//配合update使用，生成 field=?
+func (S *DataStruct) setData() (string, []interface{}, error) {
+	keys := []string{}
+	values := []interface{}{}
+	for key, value := range *S {
+		keys = append(keys, key+"=?")
+		values = append(values, value)
+	}
+	return strings.Join(keys, ","), values, nil
+}
 
 //插入数据
 func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err error) {
@@ -93,8 +103,27 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 }
 
 //更新
-func (config *DbConfig) Update(table string, datas DataStruct, where string) {
-
+func (config *DbConfig) Update(table string, datas DataStruct, args ...interface{}) (num int64, err error) {
+	s, v, _ := datas.setData()
+	sql := "UPDATE `" + table + "` SET " + s
+	for _, arg := range args {
+		switch arg.(type) {
+		case int:
+			sql += strconv.Itoa(arg.(int))
+		case int64:
+			sql += strconv.FormatInt(arg.(int64), 10)
+		case string:
+			sql += " " + arg.(string)
+		case float32:
+			sql += "'" + strconv.FormatFloat(float64(arg.(float32)), 'f', -1, 32) + "'"
+		case float64:
+			sql += "'" + strconv.FormatFloat(arg.(float64), 'f', -1, 64) + "'"
+		}
+	}
+	fmt.Println(sql)
+	result, err := config.db.Exec(sql, v...)
+	num, err = result.RowsAffected()
+	return
 }
 
 //获取一条
@@ -138,6 +167,7 @@ func (config *DbConfig) GetOne(table, fields string, args ...interface{}) (map[s
 	}
 	return item, nil
 }
+
 
 //批量查询，不带分页计算
 func (config *DbConfig) Select(table string, fields string, args ...interface{}) ([]map[string]interface{}, error) {

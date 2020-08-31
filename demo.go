@@ -73,9 +73,21 @@ func main() {
 	//fmt.Println(reflect.TypeOf(data["uid"]))
 	fmt.Println(DB.Format2String(data, "adddate"))
 
-	data2, err := db2.Select("test", "*", "WHERE id > ", 1, "ORDER BY id DESC","Limit 0,10")
+	//select
+	data2, err := db2.Select("test", "*", "WHERE id > ", 1, "ORDER BY id DESC", "Limit 0,10")
 	for i, i2 := range data2 {
-		fmt.Println(i,i2)
+		fmt.Println(i, i2)
 		fmt.Println(DB.Format2String(i2, "title"))
 	}
+	//UPDATE
+	datas3 := make(DB.DataStruct)
+	datas3["title"] = "修改后的结果"
+	datas3["uid"] = 8
+
+	rows, err := db2.Update("test", datas3, "WHERE id>86")
+	fmt.Println("影响行数:", rows)
+
+	//delete
+
+
 }
