@@ -106,7 +106,7 @@ func main() {
 	fmt.Println("总数:", total)
 
 
-
+	//批量插入
 	data9 := []DB.DataStruct{
 		DB.DataStruct{
 			"title": "xxxx",
@@ -121,4 +121,5 @@ func main() {
 	num, err :=db2.BatchInsert("test", data9)
 	fmt.Println("成功插入：",num,"条",err)
 
+	
 }
