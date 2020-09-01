@@ -155,7 +155,7 @@ func (config *DbConfig) GetOne(table, fields, where string, args ...interface{})
 	for rows.Next() {
 		_ = rows.Scan(cache...)
 		for i, data := range cache {
-			item[columns[i]] = *data.(*interface{}) //取实际类型
+			item[columns[i]] = *(data.(*interface{})) //取实际类型
 		}
 	}
 	return item, nil
@@ -188,7 +188,7 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			item[columns[i]] = (*data.(*interface{})) //取实际类型
+			item[columns[i]] = *(data.(*interface{})) //取实际类型
 		}
 		results = append(results, item)
 	}
@@ -306,7 +306,7 @@ func (config *DbConfig) Query(sqlString string, args ...interface{}) ([]map[stri
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			item[columns[i]] = (*data.(*interface{})) //取实际类型
+			item[columns[i]] = *(data.(*interface{})) //取实际类型
 		}
 		results = append(results, item)
 	}
