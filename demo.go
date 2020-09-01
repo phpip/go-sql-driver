@@ -79,26 +79,46 @@ func main() {
 	fmt.Println(DB.Format2String(data, "adddate"))
 
 	//select
-	data2, err := db2.Select("test", "*", "id > ? ORDER BY id DESC Limit 0,10", 10)
+	data2, err := db2.Select("test", "*", "id > ? ORDER BY id DESC Limit 0,5", 10)
 	for i, i2 := range data2 {
-		fmt.Println(i, i2)
-		fmt.Println(DB.Format2String(i2, "title"))
+		//fmt.Println(i, i2)
+		fmt.Println(i+1,DB.Format2String(i2, "title"))
 	}
 	//UPDATE
 	datas3 := make(DB.DataStruct)
 	datas3["title"] = "修改后的结果2"
 	datas3["uid"] = 8
 
-	rows, err := db2.Update("test", datas3, "id>?", 86)
+	rows, err := db2.Update("test", datas3, "id=?", 86)
 	fmt.Println("影响行数:", rows)
 
 	//delete
 	deleteid := 86
-	rows2, err := db2.Delete("test", "id<?", deleteid)
+	rows2, err := db2.Delete("test", "id=?", deleteid)
 	fmt.Println("影响行数:", rows2)
 
 	title := "----test---"
 	rows3, err := db2.Delete("test", "title=?", title)
 	fmt.Println("影响行数:", rows3)
+
+	//count
+	total, err := db2.Count("test", "id>? AND id<?", 190,195)
+	fmt.Println("总数:", total)
+
+
+
+	data9 := []DB.DataStruct{
+		DB.DataStruct{
+			"title": "xxxx",
+			"uid": 100,
+		},
+		DB.DataStruct{
+			"title": "z是是是zzz",
+			"uid": 200,
+		},
+	}
+
+	num, err :=db2.BatchInsert("test", data9)
+	fmt.Println("成功插入：",num,"条",err)
 
 }

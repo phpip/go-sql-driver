@@ -2,6 +2,7 @@ package driver
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"strings"
@@ -24,7 +25,7 @@ type DbConfig struct {
 	DBName       string
 	MaxOpenConns int
 	MaxIdleConns int
-	Debug bool
+	Debug        bool
 }
 
 func (config *DbConfig) Connect() (err error) {
@@ -93,17 +94,17 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 	placeString = placeString[:len(placeString)-1]
 	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
 	if config.Debug {
-		fmt.Println("SQL Debug:",sqlString)
+		fmt.Println("SQL Debug:", sqlString)
 	}
 	result, err := config.db.Exec(sqlString, v...)
 	if err != nil {
-		return 0, err
+		return
 	}
 	id, err = result.LastInsertId()
 	if err != nil {
-		return 0, err
+		return
 	}
-	return id, nil
+	return
 }
 
 //更新
@@ -114,12 +115,15 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:",sqlString)
+		fmt.Println("SQL Debug:", sqlString)
 	}
 	for _, value := range args {
 		v = append(v, value)
 	}
 	result, err := config.db.Exec(sqlString, v...)
+	if err != nil {
+		return
+	}
 	num, err = result.RowsAffected()
 	return
 }
@@ -128,10 +132,11 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 func (config *DbConfig) GetOne(table, fields, where string, args ...interface{}) (map[string]interface{}, error) {
 	sqlString := "SELECT " + fields + " FROM `" + table + "`"
 	if where != "" {
-		sqlString += " WHERE " + where + " LIMIT 0,1"
+		sqlString += " WHERE " + where
 	}
+	sqlString += " LIMIT 0,1"
 	if config.Debug {
-		fmt.Println("SQL Debug:",sqlString)
+		fmt.Println("SQL Debug:", sqlString)
 	}
 	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
@@ -163,7 +168,7 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:",sqlString)
+		fmt.Println("SQL Debug:", sqlString)
 	}
 	rows, err := config.db.Query(sqlString, args...)
 	if err != nil {
@@ -195,20 +200,38 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:",sqlString)
+		fmt.Println("SQL Debug:", sqlString)
 	}
 	stmt, err := config.db.Prepare(sqlString)
-
+	if err != nil {
+		return
+	}
 	result, err := stmt.Exec(args...)
 	num, err = result.RowsAffected()
 	return
 }
 
-func (config *DbConfig) Close() (error){
+func (config *DbConfig) Count(table string, where string, args ...interface{}) (total int64, err error) {
+	sqlString := "SELECT COUNT(*) as total FROM `" + table + "`"
+	if where != "" {
+		sqlString += " WHERE " + where
+	}
+	if config.Debug {
+		fmt.Println("SQL Debug:", sqlString)
+	}
+	stmt, err := config.db.Prepare(sqlString)
+	if err != nil {
+		return
+	}
+	row := stmt.QueryRow(args...)
+	err = row.Scan(&total)
+	return
+}
+
+func (config *DbConfig) Close() error {
 	err := config.db.Close()
 	return err
 }
-
 
 func Format2String(datas map[string]interface{}, key string) string {
 	if datas[key] == nil {
@@ -220,4 +243,44 @@ func Format2String(datas map[string]interface{}, key string) string {
 		ba = append(ba, byte(b))
 	}
 	return string(ba)
+}
+
+func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64, err error) {
+	var (
+		placeString string
+		columnName  string
+		columnData  []interface{}
+	)
+	if table == "" || len(datas) == 0 {
+		return 0, errors.New("Param ERROR")
+	}
+	if len(datas) == 1 {
+		_, err := config.Insert(table, datas[0])
+		if err != nil {
+			return 0, err
+		}
+		return 1, nil
+	}
+	s := strings.Repeat("?,", len(datas))
+	for _, data := range datas {
+		placeString += fmt.Sprintf("(%s),", strings.TrimSuffix(s, ","))
+		k, v, _ := data.parseData()
+		if columnName == "" {
+			columnName = k
+		}
+		columnData = append(columnData, v...)
+	}
+	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, columnName, strings.TrimSuffix(placeString, ","))
+	if config.Debug {
+		fmt.Println("SQL Debug:", sqlString)
+	}
+	res, err := config.db.Exec(sqlString, columnData...)
+	if err != nil {
+		return
+	}
+	num, err = res.RowsAffected()
+	if err != nil {
+		return
+	}
+	return
 }
