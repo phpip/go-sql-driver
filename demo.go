@@ -3,6 +3,7 @@ package main
 import (
 	DB "db-driver/driver"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -71,11 +72,6 @@ func main() {
 	fmt.Println(data["title"])
 	fmt.Println(data["uid"])
 	fmt.Println(data["adddate"])
-	/*t1:=db2.Format2String(data["title"].([]uint8))
-	fmt.Printf(t1)
-	t2:=db2.Format2String(data["uid"].([]uint8))
-	fmt.Printf(t2)*/
-	//fmt.Println(reflect.TypeOf(data["uid"]))
 	fmt.Println(DB.Format2String(data, "adddate"))
 
 	//select
@@ -121,5 +117,19 @@ func main() {
 	num, err :=db2.BatchInsert("test", data9)
 	fmt.Println("成功插入：",num,"条",err)
 
-	
+	//自定义联合查询
+	data10, err := db2.Query("SELECT * FROM test a,test_attr b where a.id=b.id")
+	for i, i2 := range data10 {
+		//fmt.Println(i, i2)
+		fmt.Println(i+1,DB.Format2String(i2, "content"))
+	}
+	//采用底层方法执行
+	var title2 string
+	err = db2.Db.QueryRow("select title from test where id = ?", 1).Scan(&title2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(title2)
+	//
+
 }

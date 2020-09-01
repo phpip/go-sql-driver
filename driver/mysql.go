@@ -16,7 +16,7 @@ type SqlValues []SetField
 */
 type DataStruct map[string]interface{}
 type DbConfig struct {
-	db           *sql.DB
+	Db           *sql.DB
 	DriverName   string
 	Addr         string
 	User         string
@@ -36,11 +36,11 @@ func (config *DbConfig) Connect() (err error) {
 	cfg.Addr = config.Addr
 	cfg.DBName = config.DBName
 	dsn := cfg.FormatDSN()
-	config.db, err = sql.Open("mysql", dsn)
+	config.Db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		return err
 	}
-	if err := config.db.Ping(); err != nil {
+	if err := config.Db.Ping(); err != nil {
 		return err
 	}
 	maxOpenConns := 0
@@ -51,8 +51,8 @@ func (config *DbConfig) Connect() (err error) {
 	if config.MaxIdleConns > 0 {
 		maxIdleConns = config.MaxIdleConns
 	}
-	config.db.SetMaxOpenConns(maxOpenConns)
-	config.db.SetMaxIdleConns(maxIdleConns)
+	config.Db.SetMaxOpenConns(maxOpenConns)
+	config.Db.SetMaxIdleConns(maxIdleConns)
 	return nil
 }
 
@@ -96,7 +96,7 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	result, err := config.db.Exec(sqlString, v...)
+	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
 		return
 	}
@@ -120,7 +120,7 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 	for _, value := range args {
 		v = append(v, value)
 	}
-	result, err := config.db.Exec(sqlString, v...)
+	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
 		return
 	}
@@ -138,7 +138,7 @@ func (config *DbConfig) GetOne(table, fields, where string, args ...interface{})
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	rows, err := config.db.Query(sqlString, args...)
+	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	rows, err := config.db.Query(sqlString, args...)
+	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	stmt, err := config.db.Prepare(sqlString)
+	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
 		return
 	}
@@ -219,7 +219,7 @@ func (config *DbConfig) Count(table string, where string, args ...interface{}) (
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	stmt, err := config.db.Prepare(sqlString)
+	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
 		return
 	}
@@ -229,7 +229,7 @@ func (config *DbConfig) Count(table string, where string, args ...interface{}) (
 }
 
 func (config *DbConfig) Close() error {
-	err := config.db.Close()
+	err := config.Db.Close()
 	return err
 }
 
@@ -274,7 +274,7 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 	if config.Debug {
 		fmt.Println("SQL Debug:", sqlString)
 	}
-	res, err := config.db.Exec(sqlString, columnData...)
+	res, err := config.Db.Exec(sqlString, columnData...)
 	if err != nil {
 		return
 	}
@@ -283,4 +283,32 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 		return
 	}
 	return
+}
+func (config *DbConfig) Query(sqlString string, args ...interface{}) ([]map[string]interface{}, error) {
+	if config.Debug {
+		fmt.Println("SQL Debug:", sqlString)
+	}
+	rows, err := config.Db.Query(sqlString, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, _ := rows.Columns()
+	columnLength := len(columns)
+	cache := make([]interface{}, columnLength)
+	for index, _ := range cache {
+		var a interface{}
+		cache[index] = &a
+	}
+	var results []map[string]interface{}
+	for rows.Next() {
+		_ = rows.Scan(cache...)
+		item := make(map[string]interface{})
+		for i, data := range cache {
+			item[columns[i]] = (*data.(*interface{})) //取实际类型
+		}
+		results = append(results, item)
+	}
+	return results, nil
 }
