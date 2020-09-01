@@ -179,11 +179,11 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 		cache[index] = &a
 	}
 	var results []map[string]interface{}
-	item := make(map[string]interface{})
 	for rows.Next() {
 		_ = rows.Scan(cache...)
+		item := make(map[string]interface{})
 		for i, data := range cache {
-			item[columns[i]] = *data.(*interface{}) //取实际类型
+			item[columns[i]] = (*data.(*interface{})) //取实际类型
 		}
 		results = append(results, item)
 	}
@@ -203,6 +203,7 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 	num, err = result.RowsAffected()
 	return
 }
+
 func (config *DbConfig) Close() (error){
 	err := config.db.Close()
 	return err
