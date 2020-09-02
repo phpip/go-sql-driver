@@ -75,7 +75,7 @@ func main() {
 	fmt.Println(DB.Format2String(data, "adddate"))
 
 	//select
-	data2, err := db2.Select("test", "*", "id > ? ORDER BY id DESC Limit 0,5", 10)
+	data2, err := db2.Select("test", "*", "title LIKE ? ORDER BY id DESC Limit 0,5", "%人民%")
 	for i, i2 := range data2 {
 		//fmt.Println(i, i2)
 		fmt.Println(i+1,DB.Format2String(i2, "title"))
@@ -105,11 +105,11 @@ func main() {
 	//批量插入
 	data9 := []DB.DataStruct{
 		DB.DataStruct{
-			"title": "xxxx",
+			"title": "A1111",
 			"uid": 100,
 		},
 		DB.DataStruct{
-			"title": "z是是是zzz",
+			"title": "A2222",
 			"uid": 200,
 		},
 	}
@@ -118,7 +118,7 @@ func main() {
 	fmt.Println("成功插入：",num,"条",err)
 
 	//自定义联合查询
-	data10, err := db2.Query("SELECT * FROM test a,test_attr b where a.id=b.id")
+	data10, err := db2.Query("SELECT * FROM test a,test_attr b where a.id=b.id AND a.uid=?",999)
 	for i, i2 := range data10 {
 		//fmt.Println(i, i2)
 		fmt.Println(i+1,DB.Format2String(i2, "content"))
@@ -130,6 +130,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(title2)
+
 	//
 
 }
