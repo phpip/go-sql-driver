@@ -6,24 +6,41 @@ import (
 	"log"
 	"os"
 )
+//连接池1
+var db1 = DB.DbConfig{
+	DriverName: "mysql",
+	Addr:       "127.0.0.1",
+	User:       "root",
+	Passwd:     "root",
+	Port:       "3306",
+	DBName:     "test1",
+	Debug:     true,
+}
+//连接池2
+var db2 = DB.DbConfig{
+	DriverName: "mysql",
+	Addr:       "127.0.0.1",
+	User:       "root",
+	Passwd:     "root",
+	Port:       "3306",
+	DBName:     "test2",
+	Debug:     true,
+}
 
-func main() {
-
-	//连接池1
-	db1 := DB.DbConfig{
-		DriverName: "mysql",
-		Addr:       "127.0.0.1",
-		User:       "root",
-		Passwd:     "root",
-		Port:       "3306",
-		DBName:     "test1",
-		Debug:     true,
-	}
+func init() {
 	err := db1.Connect()
 	if err != nil {
 		fmt.Println("connect err:", err.Error())
 		os.Exit(1)
 	}
+
+	err = db2.Connect()
+	if err != nil {
+		fmt.Println("connect err:", err.Error())
+		os.Exit(1)
+	}
+}
+func main() {
 	defer db1.Close()
 
 	datas := make(DB.DataStruct)
@@ -36,21 +53,8 @@ func main() {
 	}
 	fmt.Println("连接池1: id = ", id)
 
-	//连接池2
-	db2 := DB.DbConfig{
-		DriverName: "mysql",
-		Addr:       "127.0.0.1",
-		User:       "root",
-		Passwd:     "root",
-		Port:       "3306",
-		DBName:     "test2",
-		Debug:     true,
-	}
-	err = db2.Connect()
-	if err != nil {
-		fmt.Println("connect err:", err.Error())
-		os.Exit(1)
-	}
+	//----------------------------------------------------------
+
 	defer db2.Close()
 
 	datas2 := make(DB.DataStruct)
@@ -67,7 +71,7 @@ func main() {
 
 	//get one 获取一条
 
-	data, err := db2.GetOne("test", "*", "id > ? ORDER BY id DESC", 159)
+	data, err := db2.GetOne("test", "*", "id > ? ORDER BY id DESC", 11)
 	fmt.Println(data)
 	fmt.Println(data["title"])
 	fmt.Println(data["uid"])

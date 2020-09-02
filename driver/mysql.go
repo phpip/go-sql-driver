@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"strings"
+	"time"
 )
 
 /*type SetField struct {
@@ -89,13 +90,12 @@ func (S *DataStruct) setData() (string, []interface{}, error) {
 
 //插入数据
 func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err error) {
+	startTime := time.Now()
 	s, v, _ := datas.parseData()
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
 	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
-	}
+	defer config.printSQL(sqlString, v, startTime)
 	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
 		return
@@ -109,6 +109,7 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 
 //更新
 func (config *DbConfig) Update(table string, datas DataStruct, where string, args ...interface{}) (num int64, err error) {
+	startTime := time.Now()
 	s, v, _ := datas.setData()
 	sqlString := "UPDATE `" + table + "` SET " + s
 	if where != "" {
@@ -117,9 +118,7 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 	for _, value := range args {
 		v = append(v, value)
 	}
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
-	}
+	defer config.printSQL(sqlString, v, startTime)
 	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
 		return
@@ -130,14 +129,13 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 
 //获取一条
 func (config *DbConfig) GetOne(table, fields, where string, args ...interface{}) (map[string]interface{}, error) {
+	startTime := time.Now()
 	sqlString := "SELECT " + fields + " FROM `" + table + "`"
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
 	sqlString += " LIMIT 0,1"
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
-	}
+	defer config.printSQL(sqlString, args, startTime)
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
@@ -163,13 +161,12 @@ func (config *DbConfig) GetOne(table, fields, where string, args ...interface{})
 
 //批量查询，不带分页计算
 func (config *DbConfig) Select(table string, fields string, where string, args ...interface{}) ([]map[string]interface{}, error) {
+	startTime := time.Now()
 	sqlString := "SELECT " + fields + " FROM `" + table + "`"
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
-	}
+	defer config.printSQL(sqlString, args, startTime)
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
@@ -195,13 +192,12 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 	return results, nil
 }
 func (config *DbConfig) Delete(table string, where string, args ...interface{}) (num int64, err error) {
+	startTime := time.Now()
 	sqlString := "DELETE FROM `" + table + "`"
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
-	}
+	defer config.printSQL(sqlString, args, startTime)
 	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
 		return
@@ -212,13 +208,12 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 }
 
 func (config *DbConfig) Count(table string, where string, args ...interface{}) (total int64, err error) {
+	startTime := time.Now()
 	sqlString := "SELECT COUNT(*) as total FROM `" + table + "`"
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
-	}
+	defer config.printSQL(sqlString, args, startTime)
 	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
 		return
@@ -246,10 +241,11 @@ func Format2String(datas map[string]interface{}, key string) string {
 }
 
 func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64, err error) {
+	startTime := time.Now()
 	var (
 		placeString string
 		columnName  []string
-		sqlColumn string
+		sqlColumn   string
 		columnData  []interface{}
 	)
 	if table == "" || len(datas) == 0 {
@@ -266,20 +262,18 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 	for _, data := range datas {
 		placeString += fmt.Sprintf("(%s),", strings.TrimSuffix(s, ","))
 		if columnName == nil {
-			for k :=range  data {
+			for k := range data {
 				columnName = append(columnName, k)
 			}
 		}
-		for _, key := range  columnName {
+		for _, key := range columnName {
 			columnData = append(columnData, data[key])
 		}
 		sqlColumn = strings.Join(columnName, ",")
 	}
 	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, sqlColumn, strings.TrimSuffix(placeString, ","))
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", columnData)
-	}
 	res, err := config.Db.Exec(sqlString, columnData...)
+	defer config.printSQL(sqlString, columnData, startTime)
 	if err != nil {
 		return
 	}
@@ -290,9 +284,8 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 	return
 }
 func (config *DbConfig) Query(sqlString string, args ...interface{}) ([]map[string]interface{}, error) {
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
-	}
+	startTime := time.Now()
+	defer config.printSQL(sqlString, args, startTime)
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
 		return nil, err
@@ -316,4 +309,12 @@ func (config *DbConfig) Query(sqlString string, args ...interface{}) ([]map[stri
 		results = append(results, item)
 	}
 	return results, nil
+}
+func (config *DbConfig) printSQL(sqlString string, param interface{}, startTime time.Time) {
+	if config.Debug {
+		tc := time.Since(startTime)
+		fmt.Println("+-----------------------------------------------------------------------")
+		fmt.Println("| SQL Debug:", sqlString, "\n| SQL Param:", param, "\n| SQL TimeCost:", tc)
+		fmt.Println("+-----------------------------------------------------------------------")
+	}
 }
