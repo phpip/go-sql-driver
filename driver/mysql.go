@@ -94,7 +94,7 @@ func (config *DbConfig) Insert(table string, datas DataStruct) (id int64, err er
 	placeString = placeString[:len(placeString)-1]
 	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
 	}
 	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
@@ -114,11 +114,11 @@ func (config *DbConfig) Update(table string, datas DataStruct, where string, arg
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
-	}
 	for _, value := range args {
 		v = append(v, value)
+	}
+	if config.Debug {
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
 	}
 	result, err := config.Db.Exec(sqlString, v...)
 	if err != nil {
@@ -136,7 +136,7 @@ func (config *DbConfig) GetOne(table, fields, where string, args ...interface{})
 	}
 	sqlString += " LIMIT 0,1"
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
@@ -168,7 +168,7 @@ func (config *DbConfig) Select(table string, fields string, where string, args .
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
@@ -200,7 +200,7 @@ func (config *DbConfig) Delete(table string, where string, args ...interface{}) 
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
@@ -217,7 +217,7 @@ func (config *DbConfig) Count(table string, where string, args ...interface{}) (
 		sqlString += " WHERE " + where
 	}
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	stmt, err := config.Db.Prepare(sqlString)
 	if err != nil {
@@ -248,7 +248,8 @@ func Format2String(datas map[string]interface{}, key string) string {
 func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64, err error) {
 	var (
 		placeString string
-		columnName  string
+		columnName  []string
+		sqlColumn string
 		columnData  []interface{}
 	)
 	if table == "" || len(datas) == 0 {
@@ -261,18 +262,22 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 		}
 		return 1, nil
 	}
-	s := strings.Repeat("?,", len(datas))
+	s := strings.Repeat("?,", len(datas[0]))
 	for _, data := range datas {
 		placeString += fmt.Sprintf("(%s),", strings.TrimSuffix(s, ","))
-		k, v, _ := data.parseData()
-		if columnName == "" {
-			columnName = k
+		if columnName == nil {
+			for k :=range  data {
+				columnName = append(columnName, k)
+			}
 		}
-		columnData = append(columnData, v...)
+		for _, key := range  columnName {
+			columnData = append(columnData, data[key])
+		}
+		sqlColumn = strings.Join(columnName, ",")
 	}
-	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, columnName, strings.TrimSuffix(placeString, ","))
+	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, sqlColumn, strings.TrimSuffix(placeString, ","))
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", columnData)
 	}
 	res, err := config.Db.Exec(sqlString, columnData...)
 	if err != nil {
@@ -286,7 +291,7 @@ func (config *DbConfig) BatchInsert(table string, datas []DataStruct) (num int64
 }
 func (config *DbConfig) Query(sqlString string, args ...interface{}) ([]map[string]interface{}, error) {
 	if config.Debug {
-		fmt.Println("SQL Debug:", sqlString)
+		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := config.Db.Query(sqlString, args...)
 	if err != nil {
